@@ -12,6 +12,24 @@ print("The sum is:", sum_result)
 
 sum_result = num1 + num2  # Duplicate calculation
 print("The sum is:", sum_result)
+# Duplicate code (Code smell)
+sum_result = num1 + num2
+print("The sum is:", sum_result)
+
+sum_result = num1 + num2  # Duplicate calculation
+print("The sum is:", sum_result)
+# Duplicate code (Code smell)
+sum_result = num1 + num2
+print("The sum is:", sum_result)
+
+sum_result = num1 + num2  # Duplicate calculation
+print("The sum is:", sum_result)
+# Duplicate code (Code smell)
+sum_result = num1 + num2
+print("The sum is:", sum_result)
+
+sum_result = num1 + num2  # Duplicate calculation
+print("The sum is:", sum_result)
 
 # Division by zero (Bug)
 div_result = num1 / num2  # Potential division by zero error
