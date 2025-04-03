@@ -1,8 +1,8 @@
 name: Commit Message Check
 
 on:
-  pull_request:
-  push:
+  push:  # Runs on every push to all branches
+  pull_request:  # Runs on all pull requests
 
 jobs:
   check-commit:
@@ -11,30 +11,51 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Ensures full commit history is available
+          fetch-depth: 0  # Ensure full commit history is available
 
       - name: Run Commit Message Check
         run: |
-          COMMIT_MSG=$(git log --format=%B -n 1)
-          echo "Checking commit message: \"$COMMIT_MSG\""
-
-          # Skip merge commits
-          if [[ "$COMMIT_MSG" == Merge* ]]; then
-            echo "✅ Merge commit detected. Skipping commit message check."
-            exit 0
+          # Determine commit range based on event type
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            COMMIT_RANGE="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+          else
+            if [ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]; then
+              COMMIT_RANGE="${{ github.event.after }}"  # First commit case
+            else
+              COMMIT_RANGE="${{ github.event.before }}..${{ github.event.after }}"
+            fi
           fi
-          
-          python -c '
-          import re, sys
-          commit_msg = """'"$COMMIT_MSG"'""".strip()
-          pattern = r"^(feat|chore):\s[A-Z].+"
-          
-          if not re.match(pattern, commit_msg):
-              print("❌ ERROR: Invalid commit message format!")
-              print("Commit messages must start with \"feat\" or \"chore\" and follow this format:")
-              print("   Example: feat: Add new feature")
-              print("   Example: chore: Update dependencies")
-              sys.exit(1)
-          
-          print("✅ Commit message format is correct!")
-          '
+
+          echo "Checking commit range: $COMMIT_RANGE"
+
+          # Get commit messages within the determined range
+          COMMIT_MSGS=$(git log --format=%B --no-merges $COMMIT_RANGE)
+
+          # Check each commit message
+          echo "Checking commit messages..."
+          echo "$COMMIT_MSGS" | while IFS= read -r commit_msg; do
+            commit_msg=$(echo "$commit_msg" | tr -d '\n' | sed 's/ *$//')  # Clean up message
+
+            # Skip empty lines
+            if [[ -z "$commit_msg" ]]; then
+              continue
+            fi
+
+            # Skip merge commits
+            if [[ "$commit_msg" == Merge* ]]; then
+              echo "✅ Skipping merge commit: $commit_msg"
+              continue
+            fi
+
+            # Validate commit message format
+            if ! echo "$commit_msg" | grep -qE "^(feat|chore):\s[A-Z].+"; then
+              echo "❌ ERROR: Invalid commit message format!"
+              echo "Commit message: \"$commit_msg\""
+              echo "Commit messages must start with \"feat\" or \"chore\" and follow this format:"
+              echo "   Example: feat: Add new feature"
+              echo "   Example: chore: Update dependencies"
+              exit 1
+            fi
+
+            echo "✅ Commit message format is correct: \"$commit_msg\""
+          done
