@@ -9,17 +9,25 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Ensures full commit history is available
 
       - name: Run Commit Message Check
         run: |
-          COMMIT_MSG=$(git log --format=%B -n 1 ${{ github.event.pull_request.head.sha }})
-          echo "Checking commit message: $COMMIT_MSG"
+          COMMIT_MSG=$(git log --format=%B -n 1)
+          echo "Checking commit message: \"$COMMIT_MSG\""
+          
           python -c '
           import re, sys
           commit_msg = """'"$COMMIT_MSG"'""".strip()
-          if not re.match(r"^(feat|chore):\s[A-Z].+", commit_msg):
-              print("❌ ERROR: Commit message must start with feat or chore and follow the format:")
+          pattern = r"^(feat|chore):\s[A-Z].+"
+          
+          if not re.match(pattern, commit_msg):
+              print("❌ ERROR: Invalid commit message format!")
+              print("Commit messages must start with \"feat\" or \"chore\" and follow this format:")
               print("   Example: feat: Add new feature")
+              print("   Example: chore: Update dependencies")
               sys.exit(1)
+          
           print("✅ Commit message format is correct!")
           '
