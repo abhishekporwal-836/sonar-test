@@ -2,6 +2,7 @@ name: Commit Message Check
 
 on:
   pull_request:
+  push:
 
 jobs:
   check-commit:
@@ -16,13 +17,21 @@ jobs:
         run: |
           COMMIT_MSG=$(git log --format=%B -n 1)
           echo "Checking commit message: \"$COMMIT_MSG\""
+
+          # Skip merge commits
+          if [[ "$COMMIT_MSG" == Merge* ]]; then
+            echo "✅ Merge commit detected. Skipping commit message check."
+            exit 0
+          fi
           
           python -c '
           import re, sys
           commit_msg = """'"$COMMIT_MSG"'""".strip()
-          if not re.match(r"^(feat|chore):\s[A-Z].+", commit_msg):
-              print(commit_msg)
-              print("❌ ERROR: Commit message must start with feat or chore and follow the format:")
+          pattern = r"^(feat|chore):\s[A-Z].+"
+          
+          if not re.match(pattern, commit_msg):
+              print("❌ ERROR: Invalid commit message format!")
+              print("Commit messages must start with \"feat\" or \"chore\" and follow this format:")
               print("   Example: feat: Add new feature")
               print("   Example: chore: Update dependencies")
               sys.exit(1)
