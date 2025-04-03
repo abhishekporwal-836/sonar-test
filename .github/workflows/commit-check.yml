@@ -18,8 +18,8 @@ jobs:
           import re, sys
           commit_msg = """'"$COMMIT_MSG"'""".strip()
           if not re.match(r"^(feat|chore):\s[A-Z].+", commit_msg):
-              print("❌ ERROR: Commit message must start with feat or chore and follow the format:")
-              print("   Example: feat: Add new feature")
+              print("ERROR: Commit message must start with feat or chore and follow the format:")
+              print("Example: feat: Add new feature")
               sys.exit(1)
-          print("✅ Commit message format is correct!")
+          print("Commit message format is correct!")
           '
