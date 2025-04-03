@@ -15,23 +15,21 @@ jobs:
 
       - name: Run Commit Message Check
         run: |
-          # Determine commit range based on event type
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            COMMIT_RANGE="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+          # Find the last merge commit on main
+          LAST_MERGE=$(git merge-base origin/main HEAD)
+
+          # Determine commit range
+          if [ -n "$LAST_MERGE" ]; then
+            COMMIT_RANGE="$LAST_MERGE..HEAD"
           else
-            if [ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]; then
-              COMMIT_RANGE="${{ github.event.after }}"  # First commit case
-            else
-              COMMIT_RANGE="${{ github.event.before }}..${{ github.event.after }}"
-            fi
+            COMMIT_RANGE="HEAD"  # If no merge found, check the latest commit
           fi
 
           echo "Checking commit range: $COMMIT_RANGE"
 
-          # Get commit messages within the determined range
+          # Get commit messages from the last merge until now
           COMMIT_MSGS=$(git log --format=%B --no-merges $COMMIT_RANGE)
 
-          # Check each commit message
           echo "Checking commit messages..."
           echo "$COMMIT_MSGS" | while IFS= read -r commit_msg; do
             commit_msg=$(echo "$commit_msg" | tr -d '\n' | sed 's/ *$//')  # Clean up message
