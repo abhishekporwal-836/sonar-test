@@ -1,0 +1,35 @@
+name: Enforce Branch Protection Rules
+
+on:
+  push:
+    branches:
+      - main  # Ensures this only runs when changes are pushed to the main branch
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  enforce-branch-protection:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce Branch Protection Rules
+        run: |
+          curl -X PUT -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/${{ github.repository }}/branches/main/protection \
+          -d '{
+            "required_status_checks": {
+              "strict": true,
+              "contexts": ["SonarCloud Code Analysis", "check-commit"]
+            },
+            "enforce_admins": true,
+            "required_pull_request_reviews": {
+              "dismiss_stale_reviews": false,
+              "require_code_owner_reviews": false,
+              "required_approving_review_count": 0
+            },
+            "restrictions": null,
+            "required_conversation_resolution": true,
+            "allow_force_pushes": false,
+            "allow_deletions": false
+          }'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
